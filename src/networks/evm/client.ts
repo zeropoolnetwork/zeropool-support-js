@@ -29,7 +29,10 @@ export class EthereumClient extends Client {
   }
 
   public async getBalance(): Promise<string> {
-    return await this.web3.eth.getBalance(await this.getAddress());
+    const address = await this.getAddress();
+    const balance = await this.web3.eth.getBalance(address);
+
+    return balance;
   }
 
   public async getTokenBalance(tokenAddress: string): Promise<string> {
