@@ -54,6 +54,7 @@ export class EthereumClient extends Client {
       nonce,
       gas,
       gasPrice,
+      from,
       to: tokenAddress,
       value: 0,
       data,
