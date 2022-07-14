@@ -46,15 +46,19 @@ export class EthereumClient extends Client {
   public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
     const from = await this.getAddress();
     const nonce = await this.web3.eth.getTransactionCount(from);
-    const raw: any = {
+    const gas = await this.web3.eth.estimateGas({ from, to, value: amount });
+    const gasPrice = await this.web3.eth.getGasPrice();
+
+    const data = this.token.methods.transfer(to, amount).encodeABI();
+    const raw = {
       nonce,
+      gas,
+      gasPrice,
       from,
       to: tokenAddress,
       value: 0,
+      data,
     };
-    raw.gas = await this.web3.eth.estimateGas(raw);
-    raw.gasPrice = await this.web3.eth.getGasPrice();
-    raw.data = this.token.methods.transfer(to, amount).encodeABI();
 
     const signed = await this.web3.eth.signTransaction(raw);
     const receipt = await this.web3.eth.sendSignedTransaction(signed.raw);
