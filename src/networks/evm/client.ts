@@ -46,7 +46,12 @@ export class EthereumClient extends Client {
   public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
     const from = await this.getAddress();
     const nonce = await this.web3.eth.getTransactionCount(from);
-    const gas = await this.web3.eth.estimateGas({ from, to, value: amount });
+
+    this.token.options.address = tokenAddress;
+    const gas = await this.token
+        .methods
+        .transfer(to, amount)
+        .estimateGas({ from });
     const gasPrice = await this.web3.eth.getGasPrice();
 
     const data = this.token.methods.transfer(to, amount).encodeABI();
@@ -148,6 +153,7 @@ export class EthereumClient extends Client {
 
   public async mint(tokenAddress: string, amount: string): Promise<void> {
     const address = await this.getAddress();
+    this.token.options.address = tokenAddress;
     const encodedTx = await this.token.methods.mint(address, BigInt(amount)).encodeABI();
     var txObject: TransactionConfig = {
       from: address,
@@ -168,6 +174,7 @@ export class EthereumClient extends Client {
 
   public async approve(tokenAddress: string, spender: string, amount: string): Promise<void> {
     const address = await this.getAddress();
+    this.token.options.address = tokenAddress;
     const encodedTx = await this.token.methods.approve(spender, BigInt(amount)).encodeABI();
     var txObject: TransactionConfig = {
       from: address,
