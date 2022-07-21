@@ -173,9 +173,21 @@ export class EthereumClient extends Client {
   }
 
   public async approve(tokenAddress: string, spender: string, amount: string): Promise<void> {
+    const MAX_AMOUNT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
     const address = await this.getAddress();
     this.token.options.address = tokenAddress;
-    const encodedTx = await this.token.methods.approve(spender, BigInt(amount)).encodeABI();
+    const curAllowance = await this.token.methods.allowance(address, spender).call();
+
+    if (amount <= curAllowance) {
+      console.log(`No need to approve allowance. Current: ${curAllowance}, needed: ${amount}.`);
+      return;
+    } else {
+      console.log(`Approving allowance. Current: ${curAllowance}, needed: ${amount}.`);
+      amount = (BigInt(amount) - BigInt(curAllowance)).toString();
+    }
+
+    const encodedTx = await this.token.methods.approve(spender, MAX_AMOUNT).encodeABI();
     var txObject: TransactionConfig = {
       from: address,
       to: tokenAddress,
