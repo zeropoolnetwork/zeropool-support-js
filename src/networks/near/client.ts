@@ -1,131 +1,98 @@
-// import bs58 from 'bs58';
-// import BN from 'bn.js';
+import BN from 'bn.js';
 
-// import { formatNearAmount, parseNearAmount } from 'near-api-js/lib/utils/format';
-// import { KeyStore, InMemoryKeyStore } from 'near-api-js/lib/key_stores';
-// import { JsonRpcProvider } from 'near-api-js/lib/providers';
+import { formatNearAmount, parseNearAmount } from 'near-api-js/lib/utils/format';
+// import { KeyStore, InMemoryKeyStore, BrowserLocalStorageKeyStore } from 'near-api-js/lib/key_stores';
+import { JsonRpcProvider } from 'near-api-js/lib/providers';
+import { connect, ConnectConfig, Contract, Near, WalletConnection } from 'near-api-js';
 
-// import { Client } from '@/networks/client';
-// import { Transaction, TxFee, TxStatus } from '@/networks/transaction';
-// import { Config } from './config';
-// import { AccountCache } from './account';
+import { Client } from '../client';
+import { TxFee } from '../transaction';
 
-// export class NearClient {
-//   private keyStore: KeyStore;
-//   private config: Config;
-//   private lastTxTimestamps: number[] = [];
-//   private rpc: JsonRpcProvider;
-//   private accounts: AccountCache;
+export { ConnectConfig };
 
-//   constructor() {
-//     this.keyStore = new InMemoryKeyStore();
-//   }
+export class NearClient extends Client {
+  // private keyStore: KeyStore;
+  private config: ConnectConfig;
+  private rpc: JsonRpcProvider;
+  private near: Near;
+  private wallet: WalletConnection;
+  private poolContract: Contract;
 
-//   public getAddress(account: number): string {
-//     const keypair = this.accounts.getOrCreate(this.mnemonic, account).keypair;
-//     return Buffer.from(keypair.getPublicKey().data).toString('hex');
-//   }
+  public static async create(config: ConnectConfig, poolAddress: string): Promise<NearClient> {
+    let self = new NearClient();
+    // self.keyStore = new BrowserLocalStorageKeyStore();
+    self.near = await connect(config);
+    self.wallet = new WalletConnection(self.near, 'zeropool');
+    self.config = config;
+    self.poolContract = new Contract(self.wallet.account(), poolAddress!, {
+      changeMethods: ['transact', 'reserve', 'release', 'pool_index'],
+      viewMethods: [],
+    });
 
-//   public async getBalance(accountIndex: number): Promise<string> {
-//     const account = await this.accounts.getOrInit(this.mnemonic, accountIndex, this.config, this.keyStore);
-//     const balance = await account.account!.getAccountBalance();
+    // self.wallet.requestSignIn(
+    //   "example-contract.testnet", // contract requesting access
+    //   "ZeroPool client", // optional title
+    // );
 
-//     return balance.available;
-//   }
+    return self;
+  }
 
-//   /**
-//    * @param to
-//    * @param amount in yoctoNEAR
-//    */
-//   public async transfer(accountIndex: number, to: string, amount: string): Promise<void> {
-//     const account = await this.accounts.getOrInit(this.mnemonic, accountIndex, this.config, this.keyStore);
-//     await account.account!.sendMoney(to, new BN(amount));
-//   }
+  public async approve(_tokenAddress: string, _spender: string, amount: string): Promise<void> {
+    // @ts-ignore
+    await this.poolContract.reserve({
+      meta: 'some info',
+      callbackUrl: 'https://example.com/callback',
+      amount: amount
+    })
+  }
 
-//   public async getTransactions(accountIndex: number, limit?: number, offset?: number): Promise<Transaction[]> {
-//     const url = new URL(`/account/${this.getAddress(accountIndex)}/activity`, this.config.explorerUrl);
+  public async getAddress(): Promise<string> {
+    return this.wallet.getAccountId();
+  }
 
-//     if (limit) {
-//       url.searchParams.append('limit', limit.toString());
-//     }
+  public async getBalance(): Promise<string> {
+    const balance = await this.wallet.account().getAccountBalance();
 
-//     if (offset) {
-//       url.searchParams.append('offset', offset.toString());
-//     }
+    return balance.available;
+  }
 
-//     const res = await fetch(url.toString());
-//     const json = await res.json();
+  /**
+   * @param to
+   * @param amount in yoctoNEAR
+   */
+  public async transfer(to: string, amount: string): Promise<void> {
+    await this.wallet.account().sendMoney(to, new BN(amount));
+  }
 
-//     let txs: Transaction[] = [];
+  /**
+   * Convert human-readable NEAR to yoctoNEAR
+   **/
+  public toBaseUnit(amount: string): string {
+    return parseNearAmount(amount)!;
+  }
 
-//     for (const action of json) {
-//       // Convert timestamp to seconds since near presents it in nanoseconds
-//       const timestamp = parseInt(action.block_timestamp) / 1000000;
-//       if (action['action_kind'] == 'TRANSFER') {
-//         txs.push({
-//           status: TxStatus.Completed,
-//           amount: action.args.deposit,
-//           from: action.signer_id,
-//           to: action.receiver_id,
-//           timestamp: timestamp,
-//           blockHash: action.block_hash,
-//           hash: action.hash,
-//         });
-//       }
-//     }
+  /**
+  * Convert yoctoNEAR to human-readable NEAR
+  **/
+  public fromBaseUnit(amount: string): string {
+    return formatNearAmount(amount);
+  }
 
-//     return txs;
-//   }
+  public async estimateTxFee(): Promise<TxFee> {
+    const status = await this.near.connection.provider.status();
+    const latestBlock = status.sync_info.latest_block_hash;
 
-//   private async fetchNewTransactions(account: number, limit: number, offset: number): Promise<Transaction[]> {
-//     const txs = await this.getTransactions(account, limit, offset);
-//     const txIdx = txs.findIndex(tx => tx.timestamp === this.lastTxTimestamps[account]);
+    const res = await this.rpc.gasPrice(latestBlock);
 
-//     if (txIdx == -1) {
-//       const otherTxs = await this.fetchNewTransactions(account, limit, offset + limit);
-//       txs.concat(otherTxs);
-//       return txs;
-//     } else if (txIdx > 0) {
-//       return txs.slice(0, txIdx);
-//     }
+    const gasPrice = new BN(res.gas_price);
+    const gas = new BN('30000000000000');
+    const fee = gas.mul(gasPrice).toString();
+    const feeFormatted = formatNearAmount(fee);
 
-//     return [];
-//   }
-
-//   /**
-//    * Convert human-readable NEAR to yoctoNEAR
-//    **/
-//   public toBaseUnit(amount: string): string {
-//     return parseNearAmount(amount)!;
-//   }
-
-//   /**
-//   * Convert yoctoNEAR to human-readable NEAR
-//   **/
-//   public fromBaseUnit(amount: string): string {
-//     return formatNearAmount(amount);
-//   }
-
-//   public async estimateTxFee(): Promise<TxFee> {
-//     const account = await this.accounts.getOrInit(this.mnemonic, 0, this.config, this.keyStore);
-//     const status = await account.account!.connection.provider.status();
-//     const latestBlock = status.sync_info.latest_block_hash;
-
-//     const res = await this.rpc.gasPrice(latestBlock);
-
-//     const gasPrice = new BN(res.gas_price);
-//     const gas = new BN('30000000000000');
-//     const fee = gas.mul(gasPrice).toString();
-//     const feeFormatted = formatNearAmount(fee);
-
-//     return {
-//       gas: gas.toString(),
-//       gasPrice: gasPrice.toString(),
-//       fee: feeFormatted,
-//     };
-//   }
-
-//   public getNetworkType(): NetworkType {
-//     return NetworkType.near;
-//   }
-// }
+    return {
+      gas: gas.toString(),
+      gasPrice: gasPrice.toString(),
+      fee: feeFormatted,
+    };
+  }
+}

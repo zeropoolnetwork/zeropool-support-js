@@ -1,2 +1,2 @@
-// export { NearClient } from './client';
+export { NearClient } from './client';
 
