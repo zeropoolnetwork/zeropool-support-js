@@ -56,6 +56,11 @@ export class NearClient extends Client {
     return balance.available;
   }
 
+  public async getTokenBalance(_tokenAddress: string): Promise<string> {
+    // FIXME: change to token balance once the frontend starts to support tokens
+    return await this.getBalance();
+  }
+
   /**
    * @param to
    * @param amount in yoctoNEAR

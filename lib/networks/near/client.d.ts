@@ -12,6 +12,7 @@ export declare class NearClient extends Client {
     approve(_tokenAddress: string, _spender: string, amount: string): Promise<void>;
     getAddress(): Promise<string>;
     getBalance(): Promise<string>;
+    getTokenBalance(_tokenAddress: string): Promise<string>;
     /**
      * @param to
      * @param amount in yoctoNEAR
