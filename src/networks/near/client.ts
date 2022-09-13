@@ -1,5 +1,6 @@
 import BN from 'bn.js';
 
+import { DEFAULT_FUNCTION_CALL_GAS } from 'near-api-js';
 import { formatNearAmount, parseNearAmount } from 'near-api-js/lib/utils/format';
 // import { KeyStore, InMemoryKeyStore, BrowserLocalStorageKeyStore } from 'near-api-js/lib/key_stores';
 import { JsonRpcProvider } from 'near-api-js/lib/providers';
@@ -25,7 +26,7 @@ export class NearClient extends Client {
     self.wallet = new WalletConnection(self.near, 'zeropool');
     self.config = config;
     self.poolContract = new Contract(self.wallet.account(), poolAddress!, {
-      changeMethods: ['transact', 'reserve', 'release', 'pool_index'],
+      changeMethods: ['lock', 'release'],
       viewMethods: [],
     });
 
@@ -39,11 +40,9 @@ export class NearClient extends Client {
 
   public async approve(_tokenAddress: string, _spender: string, amount: string): Promise<void> {
     // @ts-ignore
-    await this.poolContract.reserve({
-      meta: 'some info',
-      callbackUrl: 'https://example.com/callback',
+    await this.poolContract.lock({
       amount: amount
-    })
+    }, DEFAULT_FUNCTION_CALL_GAS, amount);
   }
 
   public async getAddress(): Promise<string> {
