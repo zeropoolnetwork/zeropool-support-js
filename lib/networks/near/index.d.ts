@@ -1,1 +1,0 @@
-export { NearClient } from './client';

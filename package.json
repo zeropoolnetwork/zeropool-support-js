@@ -1,6 +1,6 @@
 {
   "name": "zeropool-support-js",
-  "version": "0.5.1",
+  "version": "0.5.0",
   "license": "MIT",
   "author": "Dmitry Vdovin <voidxnull@gmail.com>",
   "homepage": "https://github.com/zeropoolnetwork/zeropool-api-js",
@@ -11,7 +11,7 @@
     "src"
   ],
   "scripts": {
-    "build": "rm -rf lib/ && npx tsc --p tsconfig.json && typedoc",
+    "build": "rm -rf lib/ && npx tsc --p tsconfig.json",
     "build:node": "rm -rf node && npx tsc --p tsconfig.node.json"
   },
   "dependencies": {
