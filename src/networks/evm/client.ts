@@ -179,12 +179,12 @@ export class EthereumClient extends Client {
     this.token.options.address = tokenAddress;
     const curAllowance = await this.token.methods.allowance(address, spender).call();
 
-    if (amount <= curAllowance) {
+    if (BigInt(amount) <= BigInt(curAllowance)) {
       console.log(`No need to approve allowance. Current: ${curAllowance}, needed: ${amount}.`);
       return;
     } else {
       console.log(`Approving allowance. Current: ${curAllowance}, needed: ${amount}.`);
-      amount = (BigInt(amount) - BigInt(curAllowance)).toString();
+      // amount = (BigInt(amount) - BigInt(curAllowance)).toString();
     }
 
     const encodedTx = await this.token.methods.approve(spender, MAX_AMOUNT).encodeABI();
