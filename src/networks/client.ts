@@ -35,7 +35,7 @@ export abstract class Client {
     throw new Error('unimplemented');
   }
 
-  public approve(tokenAddress: string, spender: string, amount: string): Promise<void> {
+  public approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
     throw new Error('unimplemented'); 
   }
 

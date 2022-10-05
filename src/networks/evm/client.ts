@@ -172,7 +172,7 @@ export class EthereumClient extends Client {
     await this.web3.eth.sendSignedTransaction(signedTx.raw);
   }
 
-  public async approve(tokenAddress: string, spender: string, amount: string): Promise<void> {
+  public async approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
     const MAX_AMOUNT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 
     const address = await this.getAddress();
@@ -181,7 +181,7 @@ export class EthereumClient extends Client {
 
     if (BigInt(amount) <= BigInt(curAllowance)) {
       console.log(`No need to approve allowance. Current: ${curAllowance}, needed: ${amount}.`);
-      return;
+      return null;
     } else {
       console.log(`Approving allowance. Current: ${curAllowance}, needed: ${amount}.`);
       // amount = (BigInt(amount) - BigInt(curAllowance)).toString();
@@ -203,6 +203,8 @@ export class EthereumClient extends Client {
 
     const signedTx = await this.web3.eth.signTransaction(txObject);
     await this.web3.eth.sendSignedTransaction(signedTx.raw);
+
+    return null;
   }
 
 

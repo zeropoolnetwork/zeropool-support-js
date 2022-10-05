@@ -1,10 +1,11 @@
 import BN from 'bn.js';
 
-import { DEFAULT_FUNCTION_CALL_GAS } from 'near-api-js';
+import { Account, DEFAULT_FUNCTION_CALL_GAS, KeyPair } from 'near-api-js';
 import { formatNearAmount, parseNearAmount } from 'near-api-js/lib/utils/format';
-// import { KeyStore, InMemoryKeyStore, BrowserLocalStorageKeyStore } from 'near-api-js/lib/key_stores';
+import { InMemoryKeyStore } from 'near-api-js/lib/key_stores';
 import { JsonRpcProvider } from 'near-api-js/lib/providers';
-import { connect, ConnectConfig, Contract, Near, WalletConnection } from 'near-api-js';
+import { connect, ConnectConfig, Contract, Near } from 'near-api-js';
+import { parseSeedPhrase } from 'near-seed-phrase';
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
@@ -12,45 +13,53 @@ import { TxFee } from '../transaction';
 export { ConnectConfig };
 
 export class NearClient extends Client {
-  // private keyStore: KeyStore;
   private config: ConnectConfig;
   private rpc: JsonRpcProvider;
   private near: Near;
-  private wallet: WalletConnection;
   private poolContract: Contract;
+  private account: Account;
 
-  public static async create(config: ConnectConfig, poolAddress: string): Promise<NearClient> {
+  public static async create(config: ConnectConfig, poolAddress: string, accountId: string, seedPhrase: string): Promise<NearClient> {
     let self = new NearClient();
-    // self.keyStore = new BrowserLocalStorageKeyStore();
+    config.keyStore = config.keyStore || new InMemoryKeyStore();
+    const { secretKey } = parseSeedPhrase(seedPhrase);
+    const keyPair = KeyPair.fromString(secretKey);
+    await config.keyStore.setKey(config.networkId, accountId, keyPair);
+
     self.near = await connect(config);
-    self.wallet = new WalletConnection(self.near, 'zeropool');
     self.config = config;
-    self.poolContract = new Contract(self.wallet.account(), poolAddress!, {
-      changeMethods: ['lock', 'release'],
+    self.account = await self.near.account(accountId);
+
+    self.poolContract = new Contract(self.account, poolAddress, {
+      changeMethods: ['lock', 'release', 'account_locks'],
       viewMethods: [],
     });
-
-    // self.wallet.requestSignIn(
-    //   "example-contract.testnet", // contract requesting access
-    //   "ZeroPool client", // optional title
-    // );
 
     return self;
   }
 
-  public async approve(_tokenAddress: string, _spender: string, amount: string): Promise<void> {
+  public async approve(_tokenAddress: string, _spender: string, amount: string): Promise<number | null> {
     // @ts-ignore
-    await this.poolContract.lock({
+    const locks: { nonce: number, amount: string, timestamp: string }[] = await this.poolContract.account_locks({ account_id: this.account.accountId });
+    const lock = locks.find(lock => lock.amount === amount);
+
+    if (lock) {
+      console.log('Lock found. No need to approve.', lock);
+      return lock.nonce;
+    }
+
+    // @ts-ignore
+    return await this.poolContract.lock({
       amount: amount
     }, DEFAULT_FUNCTION_CALL_GAS, amount);
   }
 
   public async getAddress(): Promise<string> {
-    return this.wallet.getAccountId();
+    return this.account.accountId;
   }
 
   public async getBalance(): Promise<string> {
-    const balance = await this.wallet.account().getAccountBalance();
+    const balance = await this.account.getAccountBalance();
 
     return balance.available;
   }
@@ -65,7 +74,7 @@ export class NearClient extends Client {
    * @param amount in yoctoNEAR
    */
   public async transfer(to: string, amount: string): Promise<void> {
-    await this.wallet.account().sendMoney(to, new BN(amount));
+    await this.account.sendMoney(to, new BN(amount));
   }
 
   /**

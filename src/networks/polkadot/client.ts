@@ -34,6 +34,10 @@ export class PolkadotClient extends Client {
     return client;
   }
 
+  public async approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
+    return null;
+  }
+
   public async getAddress(): Promise<string> {
     return this.account.address;
   }
