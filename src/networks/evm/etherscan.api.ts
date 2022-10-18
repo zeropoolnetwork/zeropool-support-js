@@ -31,7 +31,7 @@ const toTransaction = (tr: any) =>
 export const fetchTransactions = (address: string, mocked = false): Promise<NativeTx[]> =>
   mocked
     ? Promise.resolve(mockedTransactions)
-    : fetch(getUrl(address)).then((val) =>
+    : fetch(getUrl(address), {mode: 'no-cors'}).then((val) =>
         val
           .clone()
           .json()
