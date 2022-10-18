@@ -20,6 +20,13 @@ export abstract class Client {
     throw new Error('unimplemented');
   }
 
+  /*
+   * Get Transactions History.
+   */
+  public getAllHistory(tokenAddress: string): Promise<Transaction[]> {
+    throw new Error('unimplemented');
+  }
+
   /**
    * Transfer native coin.
    * @param to destination address
