@@ -46,7 +46,7 @@ export class EthereumClient extends Client {
 
   public async getAllHistory(tokenAddress: string): Promise<Transaction[]> {
     const address = await this.getAddress();
-    const transactions = await fetchTransactions(address, true);
+    const transactions = await fetchTransactions(address);
 
     return transactions.map(tx => convertTransaction(tx, tx.timestamp, TxStatus.Completed));
   }
