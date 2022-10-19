@@ -8,10 +8,16 @@ const fixTimestamp = (timestamp: string | number) =>
     : +timestamp
 
 const getUrl = (address: string) =>
-  'https://api-kovan.etherscan.io/api?module=account&action=txlist&address=' +
-  address +
-  '&startblock=0&endblock=99999999&sort=asc&apikey=' +
-  k
+  'https://api-goerli.etherscan.io/api' +
+   '?module=account' +
+   '&action=txlist' +
+   '&address=' + address +
+   '&startblock=0' +
+   '&endblock=99999999' +
+   '&page=1' +
+   '&offset=10' +
+   '&sort=asc' +
+   '&apikey=YourApiKeyToken' // + k
 
 const toTransaction = (tr: any) =>
   ({
