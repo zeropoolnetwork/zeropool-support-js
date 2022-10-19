@@ -48,7 +48,7 @@ export class EthereumClient extends Client {
     const address = await this.getAddress();
     const transactions = await fetchTransactions(address);
 
-    return transactions.map(tx => convertTransaction(tx, tx.timestamp, TxStatus.Completed));
+    return transactions;
   }
 
   public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {

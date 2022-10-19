@@ -1,5 +1,3 @@
-import { Transaction as NativeTx } from 'web3-core'
-
 import { Transaction } from '../transaction'
 
 const k = 'MCTF6EHW28WGXZN21USVHDIAVFN9WC2IH7'
@@ -28,10 +26,10 @@ const toTransaction = (tr: any) =>
     hash: tr.hash,
   } as Transaction)
 
-export const fetchTransactions = (address: string, mocked = false): Promise<NativeTx[]> =>
+export const fetchTransactions = (address: string, mocked = false): Promise<Transaction[]> =>
   mocked
     ? Promise.resolve(mockedTransactions)
-    : fetch(getUrl(address), {mode: 'no-cors'}).then((val) =>
+    : fetch(getUrl(address)).then((val) =>
         val
           .clone()
           .json()
