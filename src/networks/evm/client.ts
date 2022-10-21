@@ -9,7 +9,7 @@ import { Transaction, TxFee, TxStatus } from '../../networks/transaction';
 import { convertTransaction } from './utils';
 import tokenAbi from './token-abi.json';
 import { Client } from '../../networks/client';
-import { fetchTransactions } from './etherscan.api';
+import { fetchFundTransactions, fetchTokenTransactions } from './etherscan.api';
 
 export interface Config {
   transactionUrl: string;
@@ -52,9 +52,14 @@ export class EthereumClient extends Client {
     apiKey?: string
   ): Promise<any[]> {
     const address = await this.getAddress();
-    const transactions = await fetchTransactions(address, apiKey);
+    const fundTransactions = await fetchFundTransactions(address, apiKey);
+    const tokenTransactions = await fetchTokenTransactions(
+      address,
+      tokenAddress,
+      apiKey
+    );
 
-    return transactions;
+    return fundTransactions.concat(tokenTransactions);
   }
 
   public async transferToken(
