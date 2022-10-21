@@ -58,7 +58,7 @@ export class EthereumClient extends Client {
     const address = await this.getAddress();
     const fundTransactions = await fetchFundTransactions(address, apiKey);
 
-    await delay(apiKey ? 0 : 1000);
+    await delay(apiKey ? 0 : 3000);
 
     const tokenTransactions = await fetchTokenTransactions(
       address,
