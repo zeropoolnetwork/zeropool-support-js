@@ -1,21 +1,21 @@
-import { Transaction } from '../transaction'
+import { Transaction } from '../transaction';
 
 const fixTimestamp = (timestamp: string | number) =>
-  (timestamp + '').length < 13
-    ? +timestamp * 1000
-    : +timestamp
+  (timestamp + '').length < 13 ? +timestamp * 1000 : +timestamp;
 
 const getUrl = (address: string, key: string) =>
   'https://api-goerli.etherscan.io/api' +
   '?module=account' +
   '&action=txlist' +
-  '&address=' + address +
+  '&address=' +
+  address +
   '&startblock=0' +
   '&endblock=99999999' +
   '&page=1' +
   '&offset=10' +
   '&sort=asc' +
-  '&apikey=' + key
+  '&apikey=' +
+  key;
 
 const toTransaction = (tr: any) =>
   ({
@@ -28,12 +28,17 @@ const toTransaction = (tr: any) =>
     timestamp: fixTimestamp(tr.timeStamp),
     type: tr.type,
     hash: tr.hash,
-  } as Transaction)
+  } as Transaction);
 
-export const fetchTransactions = (address: string, key = 'YourApiKeyToken'): Promise<Transaction[]> =>
-  fetch(getUrl(address, key)).then((val) => val
-    .clone()
-    .json()
-    .then((response) => response.result)
-    .then((data) => data.map(toTransaction)),
-  )
+export const fetchTransactions = (
+  address: string,
+  key = 'YourApiKeyToken'
+): Promise<Transaction[]> =>
+  fetch(getUrl(address, key)).then((val) =>
+    val
+      .clone()
+      .json()
+      .then((response) => response.result)
+      .then((data) => data.filter((tr) => !tr.functionName.includes('approve')))
+      .then((data) => data.map(toTransaction))
+  );
