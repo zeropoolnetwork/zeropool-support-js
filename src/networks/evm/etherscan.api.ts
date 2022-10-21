@@ -1,4 +1,4 @@
-export const delay = (time) => new Promise((res) => setTimeout(res, time));
+export const delay = (t) => new Promise((res) => setTimeout(res, t));
 
 const getFundUrl = (address: string, key: string) =>
   'https://api-goerli.etherscan.io/api' +
