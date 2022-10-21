@@ -5,10 +5,11 @@ import { AbiItem } from 'web3-utils';
 import { provider } from 'web3-core';
 import { TransactionConfig } from 'web3-core';
 
-import { TxFee, TxStatus } from '../../networks/transaction';
+import { Transaction, TxFee, TxStatus } from '../../networks/transaction';
 import { convertTransaction } from './utils';
 import tokenAbi from './token-abi.json';
 import { Client } from '../../networks/client';
+import { fetchTransactions } from './etherscan.api';
 
 export interface Config {
   transactionUrl: string;
@@ -41,6 +42,13 @@ export class EthereumClient extends Client {
     const balance = this.token.methods.balanceOf(address).call();
 
     return balance;
+  }
+
+  public async getAllHistory(tokenAddress: string, apiKey?: string): Promise<Transaction[]> {
+    const address = await this.getAddress();
+    const transactions = await fetchTransactions(address, apiKey);
+
+    return transactions;
   }
 
   public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
