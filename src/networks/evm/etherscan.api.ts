@@ -17,28 +17,14 @@ const getUrl = (address: string, key: string) =>
   '&apikey=' +
   key;
 
-const toTransaction = (tr: any) =>
-  ({
-    jobId: tr.jobId,
-    blockHash: tr.blockHash,
-    status: tr.status,
-    amount: tr.value,
-    from: tr.from,
-    to: tr.to,
-    timestamp: fixTimestamp(tr.timeStamp),
-    type: tr.type,
-    hash: tr.hash,
-  } as Transaction);
-
 export const fetchTransactions = (
   address: string,
   key = 'YourApiKeyToken'
-): Promise<Transaction[]> =>
+): Promise<any[]> =>
   fetch(getUrl(address, key)).then((val) =>
     val
       .clone()
       .json()
       .then((response) => response.result)
       .then((data) => data.filter((tr) => !tr.functionName.includes('approve')))
-      .then((data) => data.map(toTransaction))
   );
