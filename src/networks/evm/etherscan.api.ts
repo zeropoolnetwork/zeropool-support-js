@@ -1,7 +1,4 @@
-import { Transaction } from '../transaction';
-
-const fixTimestamp = (timestamp: string | number) =>
-  (timestamp + '').length < 13 ? +timestamp * 1000 : +timestamp;
+export const delay = (time) => new Promise((res) => setTimeout(res, time));
 
 const getFundUrl = (address: string, key: string) =>
   'https://api-goerli.etherscan.io/api' +

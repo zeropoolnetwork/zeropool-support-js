@@ -1,15 +1,19 @@
-import Web3 from 'web3';
 import BN from 'bn.js';
-import { Contract } from 'web3-eth-contract';
+import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
+import { Contract } from 'web3-eth-contract';
 import { provider } from 'web3-core';
 import { TransactionConfig } from 'web3-core';
 
-import { Transaction, TxFee, TxStatus } from '../../networks/transaction';
+import {
+  delay,
+  fetchFundTransactions,
+  fetchTokenTransactions,
+} from './etherscan.api';
 import { convertTransaction } from './utils';
-import tokenAbi from './token-abi.json';
+import { TxFee, TxStatus } from '../../networks/transaction';
 import { Client } from '../../networks/client';
-import { fetchFundTransactions, fetchTokenTransactions } from './etherscan.api';
+import tokenAbi from './token-abi.json';
 
 export interface Config {
   transactionUrl: string;
@@ -53,6 +57,9 @@ export class EthereumClient extends Client {
   ): Promise<any[]> {
     const address = await this.getAddress();
     const fundTransactions = await fetchFundTransactions(address, apiKey);
+
+    await delay(apiKey ? 0 : 1000);
+
     const tokenTransactions = await fetchTokenTransactions(
       address,
       tokenAddress,
