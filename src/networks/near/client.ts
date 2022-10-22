@@ -1,12 +1,11 @@
 import BN from 'bn.js';
-
-import { Account, DEFAULT_FUNCTION_CALL_GAS, KeyPair } from 'near-api-js';
+import { connect, ConnectConfig, Contract, Near, Account, DEFAULT_FUNCTION_CALL_GAS, KeyPair } from 'near-api-js';
 import { formatNearAmount, parseNearAmount } from 'near-api-js/lib/utils/format';
 import { InMemoryKeyStore } from 'near-api-js/lib/key_stores';
 import { JsonRpcProvider } from 'near-api-js/lib/providers';
-import { connect, ConnectConfig, Contract, Near } from 'near-api-js';
 import { parseSeedPhrase } from 'near-seed-phrase';
 import { Buffer } from 'buffer';
+import bs58 from 'bs58';
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
@@ -20,16 +19,22 @@ export class NearClient extends Client {
   private poolContract: Contract;
   private account: Account;
 
-  public static async create(config: ConnectConfig, poolAddress: string, accountId: string, seedPhrase: string): Promise<NearClient> {
+  public static async create(config: ConnectConfig, poolAddress: string, seedPhrase: string, accountId?: string): Promise<NearClient> {
     let self = new NearClient();
     config.keyStore = config.keyStore || new InMemoryKeyStore();
-    const { secretKey } = parseSeedPhrase(seedPhrase);
+    const { secretKey, publicKey } = parseSeedPhrase(seedPhrase);
+
+    let address = accountId!;
+    if (!address) {
+      address = bs58.decode(publicKey.split('ed25519:')[1]).toString('hex');
+    }
+
     const keyPair = KeyPair.fromString(secretKey);
-    await config.keyStore.setKey(config.networkId, accountId, keyPair);
+    await config.keyStore.setKey(config.networkId, address, keyPair);
 
     self.near = await connect(config);
     self.config = config;
-    self.account = await self.near.account(accountId);
+    self.account = await self.near.account(address);
 
     self.poolContract = new Contract(self.account, poolAddress, {
       changeMethods: ['lock', 'release', 'account_locks'],
