@@ -1,9 +1,6 @@
-import { Transaction } from '../transaction';
+export const delay = (t) => new Promise((res) => setTimeout(res, t));
 
-const fixTimestamp = (timestamp: string | number) =>
-  (timestamp + '').length < 13 ? +timestamp * 1000 : +timestamp;
-
-const getUrl = (address: string, key: string) =>
+const getFundUrl = (address: string, key: string) =>
   'https://api-goerli.etherscan.io/api' +
   '?module=account' +
   '&action=txlist' +
@@ -17,28 +14,43 @@ const getUrl = (address: string, key: string) =>
   '&apikey=' +
   key;
 
-const toTransaction = (tr: any) =>
-  ({
-    jobId: tr.jobId,
-    blockHash: tr.blockHash,
-    status: tr.status,
-    amount: tr.value,
-    from: tr.from,
-    to: tr.to,
-    timestamp: fixTimestamp(tr.timeStamp),
-    type: tr.type,
-    hash: tr.hash,
-  } as Transaction);
+const getTokenUrl = (address: string, tokenAddress: string, key: string) =>
+  'https://api-goerli.etherscan.io/api' +
+  '?module=account' +
+  '&action=tokentx' +
+  '&address=' +
+  address +
+  '&contractaddress=' +
+  tokenAddress +
+  '&startblock=0' +
+  '&endblock=99999999' +
+  '&page=1' +
+  '&offset=10' +
+  '&sort=asc' +
+  '&apikey=' +
+  key;
 
-export const fetchTransactions = (
+export const fetchFundTransactions = (
   address: string,
   key = 'YourApiKeyToken'
-): Promise<Transaction[]> =>
-  fetch(getUrl(address, key)).then((val) =>
-    val
+): Promise<any[]> =>
+  fetch(getFundUrl(address, key)).then((data) =>
+    data
       .clone()
       .json()
       .then((response) => response.result)
       .then((data) => data.filter((tr) => !tr.functionName.includes('approve')))
-      .then((data) => data.map(toTransaction))
+      .then((data) => data.filter((tr) => !tr.functionName.includes('mint')))
+  );
+
+export const fetchTokenTransactions = (
+  address: string,
+  tokenAddress: string,
+  key = 'YourApiKeyToken'
+): Promise<any[]> =>
+  fetch(getTokenUrl(address, tokenAddress, key)).then((data) =>
+    data
+      .clone()
+      .json()
+      .then((response) => response.result)
   );

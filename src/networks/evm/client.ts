@@ -1,15 +1,19 @@
-import Web3 from 'web3';
 import BN from 'bn.js';
-import { Contract } from 'web3-eth-contract';
+import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
+import { Contract } from 'web3-eth-contract';
 import { provider } from 'web3-core';
 import { TransactionConfig } from 'web3-core';
 
-import { Transaction, TxFee, TxStatus } from '../../networks/transaction';
+import {
+  delay,
+  fetchFundTransactions,
+  fetchTokenTransactions,
+} from './etherscan.api';
 import { convertTransaction } from './utils';
-import tokenAbi from './token-abi.json';
+import { TxFee, TxStatus } from '../../networks/transaction';
 import { Client } from '../../networks/client';
-import { fetchTransactions } from './etherscan.api';
+import tokenAbi from './token-abi.json';
 
 export interface Config {
   transactionUrl: string;
@@ -18,7 +22,10 @@ export class EthereumClient extends Client {
   private web3: Web3;
   private token: Contract;
 
-  constructor(provider: provider, config: Config = { transactionUrl: '{{hash}}' }) {
+  constructor(
+    provider: provider,
+    config: Config = { transactionUrl: '{{hash}}' }
+  ) {
     super();
     this.web3 = new Web3(provider);
     this.token = new this.web3.eth.Contract(tokenAbi as AbiItem[]) as Contract;
@@ -44,22 +51,36 @@ export class EthereumClient extends Client {
     return balance;
   }
 
-  public async getAllHistory(tokenAddress: string, apiKey?: string): Promise<Transaction[]> {
+  public async getAllHistory(
+    tokenAddress: string,
+    apiKey?: string
+  ): Promise<any[]> {
     const address = await this.getAddress();
-    const transactions = await fetchTransactions(address, apiKey);
+    const fundTransactions = await fetchFundTransactions(address, apiKey);
 
-    return transactions;
+    await delay(apiKey ? 0 : 5000);
+
+    const tokenTransactions = await fetchTokenTransactions(
+      address,
+      tokenAddress,
+      apiKey
+    );
+
+    return fundTransactions.concat(tokenTransactions);
   }
 
-  public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
+  public async transferToken(
+    tokenAddress: string,
+    to: string,
+    amount: string
+  ): Promise<void> {
     const from = await this.getAddress();
     const nonce = await this.web3.eth.getTransactionCount(from);
 
     this.token.options.address = tokenAddress;
-    const gas = await this.token
-        .methods
-        .transfer(to, amount)
-        .estimateGas({ from });
+    const gas = await this.token.methods
+      .transfer(to, amount)
+      .estimateGas({ from });
     const gasPrice = await this.web3.eth.getGasPrice();
 
     const data = this.token.methods.transfer(to, amount).encodeABI();
@@ -89,7 +110,9 @@ export class EthereumClient extends Client {
       status = TxStatus.Error;
     }
 
-    const nativeTx = await this.web3.eth.getTransaction(receipt.transactionHash);
+    const nativeTx = await this.web3.eth.getTransaction(
+      receipt.transactionHash
+    );
     convertTransaction(nativeTx, timestamp, status);
   }
 
@@ -122,7 +145,9 @@ export class EthereumClient extends Client {
       status = TxStatus.Error;
     }
 
-    const nativeTx = await this.web3.eth.getTransaction(receipt.transactionHash);
+    const nativeTx = await this.web3.eth.getTransaction(
+      receipt.transactionHash
+    );
     convertTransaction(nativeTx, timestamp, status);
   }
 
@@ -162,7 +187,9 @@ export class EthereumClient extends Client {
   public async mint(tokenAddress: string, amount: string): Promise<void> {
     const address = await this.getAddress();
     this.token.options.address = tokenAddress;
-    const encodedTx = await this.token.methods.mint(address, BigInt(amount)).encodeABI();
+    const encodedTx = await this.token.methods
+      .mint(address, BigInt(amount))
+      .encodeABI();
     var txObject: TransactionConfig = {
       from: address,
       to: tokenAddress,
@@ -180,22 +207,35 @@ export class EthereumClient extends Client {
     await this.web3.eth.sendSignedTransaction(signedTx.raw);
   }
 
-  public async approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
-    const MAX_AMOUNT = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+  public async approve(
+    tokenAddress: string,
+    spender: string,
+    amount: string
+  ): Promise<number | null> {
+    const MAX_AMOUNT =
+      '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 
     const address = await this.getAddress();
     this.token.options.address = tokenAddress;
-    const curAllowance = await this.token.methods.allowance(address, spender).call();
+    const curAllowance = await this.token.methods
+      .allowance(address, spender)
+      .call();
 
     if (BigInt(amount) <= BigInt(curAllowance)) {
-      console.log(`No need to approve allowance. Current: ${curAllowance}, needed: ${amount}.`);
+      console.log(
+        `No need to approve allowance. Current: ${curAllowance}, needed: ${amount}.`
+      );
       return null;
     } else {
-      console.log(`Approving allowance. Current: ${curAllowance}, needed: ${amount}.`);
+      console.log(
+        `Approving allowance. Current: ${curAllowance}, needed: ${amount}.`
+      );
       // amount = (BigInt(amount) - BigInt(curAllowance)).toString();
     }
 
-    const encodedTx = await this.token.methods.approve(spender, MAX_AMOUNT).encodeABI();
+    const encodedTx = await this.token.methods
+      .approve(spender, MAX_AMOUNT)
+      .encodeABI();
     var txObject: TransactionConfig = {
       from: address,
       to: tokenAddress,
@@ -214,7 +254,6 @@ export class EthereumClient extends Client {
 
     return null;
   }
-
 
   public async sign(data: string): Promise<string> {
     const address = await this.getAddress();
