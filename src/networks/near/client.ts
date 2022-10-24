@@ -65,9 +65,11 @@ export class NearClient extends Client {
   }
 
   public async getBalance(): Promise<string> {
-    const balance = await this.account.getAccountBalance();
-
-    return balance.available;
+    try {
+      return (await this.account.getAccountBalance()).available;
+    } catch (_) {
+      return '0';
+    }
   }
 
   public async getTokenBalance(_tokenAddress: string): Promise<string> {
