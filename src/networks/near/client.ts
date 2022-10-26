@@ -45,19 +45,26 @@ export class NearClient extends Client {
   }
 
   public async approve(_tokenAddress: string, _spender: string, amount: string): Promise<number | null> {
-    // @ts-ignore
-    const locks: { nonce: number, amount: string, timestamp: string }[] = await this.poolContract.account_locks({ account_id: this.account.accountId });
-    const lock = locks.find(lock => lock.amount === amount);
+    type Lock = {
+      nonce: number,
+      amount: string,
+      timestamp: string,
+    };
 
-    if (lock) {
-      console.log('Lock found. No need to approve.', lock);
-      return lock.nonce;
+    // @ts-ignore
+    const locks: Lock[] = await this.poolContract.account_locks({ account_id: this.account.accountId });
+    console.log('Existing locks:', locks);
+    const foundLock = locks.find(lock => lock.amount === amount);
+
+    if (foundLock) {
+      console.log('Lock found. No need to approve.', foundLock);
+      return foundLock.nonce;
+    } else {
+      // @ts-ignore
+      return await this.poolContract.lock({
+        amount: amount
+      }, DEFAULT_FUNCTION_CALL_GAS, amount);
     }
-
-    // @ts-ignore
-    return await this.poolContract.lock({
-      amount: amount
-    }, DEFAULT_FUNCTION_CALL_GAS, amount);
   }
 
   public async getAddress(): Promise<string> {
