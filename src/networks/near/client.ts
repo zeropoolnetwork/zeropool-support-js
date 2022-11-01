@@ -37,8 +37,8 @@ export class NearClient extends Client {
     self.account = await self.near.account(address);
 
     self.poolContract = new Contract(self.account, poolAddress, {
-      changeMethods: ['lock', 'release', 'account_locks'],
-      viewMethods: [],
+      changeMethods: ['lock', 'release'],
+      viewMethods: ['account_locks'],
     });
 
     return self;
