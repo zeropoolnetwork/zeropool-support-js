@@ -128,7 +128,7 @@ export class NearClient extends Client {
     if (data.slice(0, 2) == '0x') {
       data = data.slice(2);
     }
-    const dataArray = new Uint8Array(Buffer.from(data, 'hex'));
+    const dataArray = Buffer.from(data, 'hex');
     const sign = await this.account.connection.signer.signMessage(dataArray, this.account.accountId, this.config.networkId);
     return Buffer.from(sign.signature).toString('hex');
   }
