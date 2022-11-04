@@ -36,6 +36,20 @@ export class NearClient extends Client {
     self.config = config;
     self.account = await self.near.account(address);
 
+    if (accountId) {
+      const res = await self.near.connection.provider.query({
+        request_type: 'view_access_key_list',
+        finality: 'final',
+        account_id: address,
+      }) as any;
+
+      let key = res.keys.find((key: any) => key.public_key === publicKey);
+
+      if (!key) {
+        throw new Error('Seed phrase is not associated with the account ID');
+      }
+    }
+
     self.poolContract = new Contract(self.account, poolAddress, {
       changeMethods: ['lock', 'release'],
       viewMethods: ['account_locks'],
