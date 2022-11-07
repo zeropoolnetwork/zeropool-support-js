@@ -146,4 +146,16 @@ export class NearClient extends Client {
     const sign = await this.account.connection.signer.signMessage(dataArray, this.account.accountId, this.config.networkId);
     return Buffer.from(sign.signature).toString('hex');
   }
+
+  transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
+    if (tokenAddress) {
+      return this.transfer(to, amount);
+    } else {
+      throw new Error('FT transfers are not supported yet');
+    }
+  }
+
+  getTransactionUrl(hash: string): string {
+    return 'https://explorer.testnet.near.org/transactions/' + hash; // FIXME: Make it configurable
+  }
 }
