@@ -88,7 +88,8 @@ export class NearClient extends Client {
   public async getBalance(): Promise<string> {
     try {
       return (await this.account.getAccountBalance()).available;
-    } catch (_) {
+    } catch (err) {
+      console.log('Failed to get balance', err);
       return '0';
     }
   }
@@ -147,7 +148,7 @@ export class NearClient extends Client {
     return Buffer.from(sign.signature).toString('hex');
   }
 
-  transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
+  public transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
     if (tokenAddress) {
       return this.transfer(to, amount);
     } else {
@@ -155,7 +156,7 @@ export class NearClient extends Client {
     }
   }
 
-  getTransactionUrl(hash: string): string {
+  public getTransactionUrl(hash: string): string {
     return 'https://explorer.testnet.near.org/transactions/' + hash; // FIXME: Make it configurable
   }
 }
