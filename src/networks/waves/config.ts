@@ -1,7 +1,7 @@
 export enum ChainId {
-  Mainnet = 'Mainnet',
-  Testnet = 'Testnet',
-  Stagenet = 'Stagenet',
+  Mainnet = 'mainnet',
+  Testnet = 'testnet',
+  Stagenet = 'stagenet',
 }
 
 export namespace ChainId {

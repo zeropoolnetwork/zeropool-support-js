@@ -1,102 +1,96 @@
-// import { nodeInteraction, broadcast, transfer } from "@waves/waves-transactions";
-// import { create } from '@waves/node-api-js';
+import { nodeInteraction, broadcast, transfer, invokeScript } from "@waves/waves-transactions";
+import { signBytes, base58Decode } from '@waves/ts-lib-crypto'
+import { Seed } from "@waves/waves-transactions/dist/seedUtils";
 
-// import { Client } from '@/networks/client';
-// import { NetworkType } from '@/networks/network-type';
-// import { Transaction, TxFee, TxStatus } from '@/networks/transaction';
-// import { Config } from './config';
-// import { AccountCache } from './account';
-// import { ZeroPoolState } from "@/state";
+import { Client } from '../client';
+import { TxFee } from '../transaction';
+import { Config } from './config';
 
-// export class WavesNetwork extends Client {
-//   private config: Config;
-//   private accounts: AccountCache;
-//   private api: ReturnType<typeof create>;
-//   private lastTxTimestamps: number[] = [];
+export class WavesClient extends Client {
+  private config: Config;
+  private account: Seed;
+  private poolAddress: string;
 
-//   constructor(mnemonic: string, config: Config, state: ZeroPoolState, worker: any) {
-//     this.config = config;
-//     this.api = create(config.nodeUrl);
-//     this.accounts = new AccountCache(mnemonic, config.chainId);
-//   }
+  constructor(poolAddress: string, mnemonic: string, config: Config) {
+    super();
+    this.config = config;
+    this.account = new Seed(mnemonic, config.chainId);
+    this.poolAddress = poolAddress;
+  }
 
-//   getPrivateKey(account: number): string {
-//     return this.accounts.getOrCreate(account).privateKey;
-//   }
+  public async getAddress(): Promise<string> {
+    return this.account.address;
+  }
 
-//   getPublicKey(account: number): string {
-//     return this.accounts.getOrCreate(account).publicKey;
-//   }
+  public async getBalance(): Promise<string> {
+    const balance = await nodeInteraction.balance(await this.getAddress(), this.config.nodeUrl);
+    return balance.toString();
+  }
 
-//   getAddress(account: number): string {
-//     return this.accounts.getOrCreate(account).address;
-//   }
+  public async transfer(to: string, amount: string): Promise<void> {
+    const txParams = {
+      recipient: to,
+      amount,
+    }
 
-//   async getBalance(account: number): Promise<string> {
-//     const balance = await nodeInteraction.balance(this.getAddress(account), this.config.nodeUrl);
-//     return balance.toString();
-//   }
+    const transferTx = transfer(txParams, this.account.keyPair);
+    await broadcast(transferTx, this.config.nodeUrl);
+  }
 
-//   async transfer(account: number, to: string, amount: string): Promise<void> {
-//     const txParams = {
-//       recipient: to,
-//       amount,
-//     }
+  public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
+    const txParams = {
+      recipient: to,
+      amount,
+      assetId: tokenAddress,
+    }
 
-//     const transferTx = transfer(txParams, { privateKey: this.getPrivateKey(account) });
-//     await broadcast(transferTx, this.config.nodeUrl);
-//   }
+    const transferTx = transfer(txParams, this.account.keyPair);
+    await broadcast(transferTx, this.config.nodeUrl);
+  }
 
-//   async getTransactions(account: number, limit: number = 10, offset: number = 0): Promise<Transaction[]> {
-//     const address = this.getAddress(account);
-//     // TODO: Find a more efficient way to fetch the transaction log with an offset
-//     let txList = await this.api.transactions.fetchTransactions(address, offset + limit);
+  public async approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
+    await broadcast(invokeScript({
+      dApp: this.poolAddress,
+      call: {
+        function: 'deposit'
+      },
+      payment: [{
+        assetId: tokenAddress,
+        amount
+      }],
+    }, this.account.keyPair), this.config.nodeUrl);
 
-//     return txList.slice(offset, offset + limit).map((transaction) => {
-//       const tx = transaction as any; // FIXME: type handling, there are multiple types of tx
+    return null;
+  }
 
-//       let to, from;
-//       if (tx.recipient) {
-//         to = tx.recipient;
-//         from = tx.sender;
-//       } else if (tx.sender === address) {
-//         to = tx.sender;
-//         from = address;
-//       } else {
-//         to = address;
-//         from = tx.sender;
-//       }
 
-//       return {
-//         hash: tx.id,
-//         blockHash: '', // FIXME
-//         status: TxStatus.Completed, // FIXME: get tx status
-//         amount: tx.amount,
-//         from,
-//         to,
-//         timestamp: tx.timestamp,
-//       };
-//     });
-//   }
+  public getTransactionUrl(hash: string): string {
+    return `https://wavesexplorer.com/transactions/${hash}?network=${this.config.chainId}}`;
+  }
 
-//   toBaseUnit(amount: string): string {
-//     return (parseFloat(amount) * 10000000).toString();
-//   }
+  public toBaseUnit(amount: string): string {
+    return (parseFloat(amount) * 10000000).toString();
+  }
 
-//   fromBaseUnit(amount: string): string {
-//     return (parseInt(amount) / 10000000).toString();
-//   }
+  public fromBaseUnit(amount: string): string {
+    return (parseInt(amount) / 10000000).toString();
+  }
 
-//   // TODO: Estimate fee for private transactions
-//   async estimateTxFee(): Promise<TxFee> {
-//     return {
-//       gas: '1',
-//       gasPrice: '100000',
-//       fee: '100000',
-//     };
-//   }
+  // TODO: Estimate fee for private transactions
+  public async estimateTxFee(): Promise<TxFee> {
+    return {
+      gas: '1',
+      gasPrice: '100000',
+      fee: '100000',
+    };
+  }
 
-//   public getNetworkType(): NetworkType {
-//     return NetworkType.waves;
-//   }
-// }
+  public async sign(data: string): Promise<string> {
+    if (data.slice(0, 2) == '0x') {
+      data = data.slice(2);
+    }
+    const dataArray = Buffer.from(data, 'hex');
+    const signature = signBytes(this.account.keyPair, dataArray);
+    return Buffer.from(base58Decode(signature)).toString('hex');
+  }
+}

@@ -1,2 +1,2 @@
-// export { WavesNetwork } from './client';
-// export { Config } from './config';
+export { WavesClient } from './client';
+export { Config } from './config';
