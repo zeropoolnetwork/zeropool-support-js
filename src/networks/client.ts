@@ -43,7 +43,11 @@ export abstract class Client {
   }
 
   public approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
-    throw new Error('unimplemented'); 
+    throw new Error('unimplemented');
+  }
+
+  public depositDelegated(tokenAddress: string, receiverD: Uint8Array, receiverP: Uint8Array, amount: string, fee: string = '0'): Promise<void> {
+    throw new Error('unimplemented');
   }
 
   public getTransactionUrl(hash: string): string {

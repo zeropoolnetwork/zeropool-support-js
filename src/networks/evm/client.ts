@@ -4,6 +4,7 @@ import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 import { provider } from 'web3-core';
 import { TransactionConfig } from 'web3-core';
+import { abi as ddAbi } from './DelegatedDepositStorage.json';
 
 import {
   delay,
@@ -17,18 +18,21 @@ import tokenAbi from './token-abi.json';
 
 export interface Config {
   transactionUrl: string;
+  ddStorageAddress: string;
 }
 export class EthereumClient extends Client {
   private web3: Web3;
   private token: Contract;
+  private ddStorage: Contract;
 
   constructor(
     provider: provider,
-    config: Config = { transactionUrl: '{{hash}}' }
+    config: Config = { transactionUrl: '{{hash}}', ddStorageAddress: '' }
   ) {
     super();
     this.web3 = new Web3(provider);
     this.token = new this.web3.eth.Contract(tokenAbi as AbiItem[]) as Contract;
+    this.ddStorage = new this.web3.eth.Contract(ddAbi as AbiItem[], config.ddStorageAddress) as Contract;
     this.transactionUrl = config.transactionUrl;
   }
 
@@ -151,6 +155,49 @@ export class EthereumClient extends Client {
     convertTransaction(nativeTx, timestamp, status);
   }
 
+  public async depositDelegated(_tokenAddress: string, receiverD: Uint8Array, receiverP: Uint8Array, amount: string, fee: string = '0'): Promise<void> {
+    const from = await this.getAddress();
+    const nonce = await this.web3.eth.getTransactionCount(from);
+
+    // bytes10 receiver_d, bytes32 receiver_p, uint256 amount, uint256 fee
+    const gas = await this.ddStorage.methods
+      .deposit(receiverD, receiverP, amount, fee)
+      .estimateGas({ from });
+    const gasPrice = await this.web3.eth.getGasPrice();
+
+    const data = this.token.methods.transfer(receiverD, receiverP, amount, fee).encodeABI();
+    const raw = {
+      nonce,
+      gas,
+      gasPrice,
+      from,
+      to: this.ddStorage.options.address,
+      value: 0,
+      data,
+    };
+
+    const signed = await this.web3.eth.signTransaction(raw);
+    const receipt = await this.web3.eth.sendSignedTransaction(signed.raw);
+    const block = await this.web3.eth.getBlock(receipt.blockNumber);
+
+    let timestamp;
+    if (typeof block.timestamp == 'string') {
+      timestamp = parseInt(block.timestamp);
+    } else {
+      timestamp = block.timestamp;
+    }
+
+    let status = TxStatus.Completed;
+    if (!receipt.status) {
+      status = TxStatus.Error;
+    }
+
+    const nativeTx = await this.web3.eth.getTransaction(
+      receipt.transactionHash
+    );
+    convertTransaction(nativeTx, timestamp, status);
+  }
+
   /**
    * Converts ether to Wei.
    * @param amount in Ether
@@ -210,7 +257,7 @@ export class EthereumClient extends Client {
   public async approve(
     tokenAddress: string,
     spender: string,
-    amount: string
+    amount: string,
   ): Promise<number | null> {
     const MAX_AMOUNT =
       '115792089237316195423570985008687907853269984665640564039457584007913129639935';
