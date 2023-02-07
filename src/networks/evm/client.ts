@@ -4,7 +4,8 @@ import { AbiItem } from 'web3-utils';
 import { Contract } from 'web3-eth-contract';
 import { provider } from 'web3-core';
 import { TransactionConfig } from 'web3-core';
-import { abi as ddAbi } from './DelegatedDepositStorage.json';
+
+import ddAbi from './delegated-deposit-storage.json';
 
 import {
   delay,
