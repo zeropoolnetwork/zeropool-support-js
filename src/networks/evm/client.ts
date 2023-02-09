@@ -161,12 +161,14 @@ export class EthereumClient extends Client {
     const nonce = await this.web3.eth.getTransactionCount(from);
 
     // bytes10 receiver_d, bytes32 receiver_p, uint256 amount, uint256 fee
+    const receiverDHex = '0x' + Buffer.from(receiverD.slice(0, 10)).toString('hex');
+    const receiverPHex = '0x' + Buffer.from(receiverP).toString('hex');
     const gas = await this.ddStorage.methods
-      .deposit(receiverD, receiverP, amount, fee)
+      .deposit(receiverDHex, receiverPHex, amount, fee)
       .estimateGas({ from });
     const gasPrice = await this.web3.eth.getGasPrice();
 
-    const data = this.token.methods.transfer(receiverD, receiverP, amount, fee).encodeABI();
+    const data = this.ddStorage.methods.deposit(receiverDHex, receiverPHex, amount, fee).encodeABI();
     const raw = {
       nonce,
       gas,
