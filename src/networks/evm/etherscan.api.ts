@@ -1,7 +1,7 @@
 export const delay = (t) => new Promise((res) => setTimeout(res, t));
 
 const getFundUrl = (address: string, key: string) =>
-  'https://api-goerli.etherscan.io/api' +
+  'https://api-sepolia.etherscan.io/api' +
   '?module=account' +
   '&action=txlist' +
   '&address=' +
@@ -15,7 +15,7 @@ const getFundUrl = (address: string, key: string) =>
   key;
 
 const getTokenUrl = (address: string, tokenAddress: string, key: string) =>
-  'https://api-goerli.etherscan.io/api' +
+  'https://api-sepolia.etherscan.io/api' +
   '?module=account' +
   '&action=tokentx' +
   '&address=' +
