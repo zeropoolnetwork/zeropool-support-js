@@ -9,6 +9,7 @@ import bs58 from 'bs58';
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
+import { functionCall } from 'near-api-js/lib/transaction';
 
 export { ConnectConfig };
 
@@ -58,7 +59,7 @@ export class NearClient extends Client {
     return self;
   }
 
-  public async approve(_tokenAddress: string, _spender: string, amount: string): Promise<number | null> {
+  public async approve(tokenAddress: string, _spender: string, amount: string): Promise<number | null> {
     type Lock = {
       nonce: number,
       amount: string,
@@ -74,10 +75,24 @@ export class NearClient extends Client {
       console.log('Lock found. No need to approve.', foundLock);
       return foundLock.nonce;
     } else {
-      // @ts-ignore
-      return await this.poolContract.lock({
-        amount: amount
-      }, DEFAULT_FUNCTION_CALL_GAS, amount);
+      if (tokenAddress === 'near') {
+        // @ts-ignore
+        await this.poolContract.lock({
+          amount: amount
+        }, DEFAULT_FUNCTION_CALL_GAS, amount);
+      } else {
+        await this.account.functionCall({
+          contractId: tokenAddress,
+          methodName: 'ft_transfer_call',
+          args: {
+            receiver_id: this.poolContract.contractId,
+            amount: amount,
+            msg: '{"method":"lock"}',
+          }
+        });
+      }
+
+      return null;
     }
   }
 
@@ -148,11 +163,18 @@ export class NearClient extends Client {
     return Buffer.from(sign.signature).toString('hex');
   }
 
-  public transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
-    if (tokenAddress) {
+  public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
+    if (tokenAddress == 'near') {
       return this.transfer(to, amount);
     } else {
-      throw new Error('FT transfers are not supported yet');
+      await this.account.functionCall({
+        contractId: tokenAddress,
+        methodName: 'ft_transfer',
+        args: {
+          receiver_id: to,
+          amount: amount,
+        }
+      });
     }
   }
 
