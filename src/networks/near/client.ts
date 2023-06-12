@@ -66,10 +66,14 @@ export class NearClient extends Client {
       timestamp: string,
     };
 
-    // @ts-ignore
-    const locks: Lock[] = await this.poolContract.account_locks({ account_id: this.account.accountId });
-    console.log('Existing locks:', locks);
-    const foundLock = locks.find(lock => lock.amount === amount);
+    const findLock = async () => {
+      // @ts-ignore
+      const locks: Lock[] = await this.poolContract.account_locks({ account_id: this.account.accountId });
+      console.log('Existing locks:', locks);
+      return locks.find(lock => lock.amount === amount);
+    };
+
+    let foundLock = await findLock();
 
     if (foundLock) {
       console.log('Lock found. No need to approve.', foundLock);
@@ -77,7 +81,7 @@ export class NearClient extends Client {
     } else {
       if (tokenAddress === 'near') {
         // @ts-ignore
-        await this.poolContract.lock({
+        return await this.poolContract.lock({
           amount: amount
         }, DEFAULT_FUNCTION_CALL_GAS, amount);
       } else {
@@ -90,6 +94,11 @@ export class NearClient extends Client {
             msg: '{"method":"lock"}',
           }
         });
+
+        foundLock = await findLock();
+        if (foundLock) {
+          return foundLock.nonce;
+        }
       }
 
       return null;
