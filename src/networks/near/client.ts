@@ -85,7 +85,7 @@ export class NearClient extends Client {
           amount: amount
         }, DEFAULT_FUNCTION_CALL_GAS, amount);
       } else {
-        await this.account.functionCall({
+        const res = await this.account.functionCall({
           contractId: tokenAddress,
           methodName: 'ft_transfer_call',
           args: {
@@ -95,13 +95,22 @@ export class NearClient extends Client {
           }
         });
 
-        foundLock = await findLock();
-        if (foundLock) {
-          return foundLock.nonce;
-        }
-      }
+        console.debug('ft_transfer_call result', res);
 
-      return null;
+        const TIMEOUT = 2000;
+        const NUM_TRIES = 10;
+
+        for (let i = NUM_TRIES; i > 0; --i) {
+          foundLock = await findLock();
+          if (foundLock) {
+            return foundLock.nonce;
+          } else {
+            await new Promise(resolve => setTimeout(resolve, TIMEOUT));
+          }
+        }
+
+        throw new Error(`Lock not found after ${NUM_TRIES} tries`);
+      }
     }
   }
 
