@@ -114,6 +114,18 @@ export class NearClient extends Client {
     }
   }
 
+
+  public async mint(tokenAddres: string, amount: string): Promise<void> {
+    await this.account.functionCall({
+      contractId: tokenAddres,
+      methodName: 'storage_deposit',
+      args: {
+        account_id: this.account.accountId,
+      },
+      attachedDeposit: new BN(parseNearAmount('0.00125')!),
+    });
+  }
+
   public async getAddress(): Promise<string> {
     return this.account.accountId;
   }
@@ -127,9 +139,10 @@ export class NearClient extends Client {
     }
   }
 
-  public async getTokenBalance(_tokenAddress: string): Promise<string> {
-    // FIXME: change to token balance once the frontend starts to support tokens
-    return await this.getBalance();
+  public async getTokenBalance(tokenAddress: string): Promise<string> {
+    return (await this.account.viewFunction(tokenAddress, 'ft_balance_of', {
+      account_id: this.account.accountId,
+    })).toString();
   }
 
   /**
