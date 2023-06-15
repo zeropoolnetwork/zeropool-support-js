@@ -9,7 +9,6 @@ import bs58 from 'bs58';
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
-import { functionCall } from 'near-api-js/lib/transaction';
 
 export { ConnectConfig };
 
@@ -85,6 +84,8 @@ export class NearClient extends Client {
           amount: amount
         }, DEFAULT_FUNCTION_CALL_GAS, amount);
       } else {
+        console.log('ft_transfer_call');
+
         const res = await this.account.functionCall({
           contractId: tokenAddress,
           methodName: 'ft_transfer_call',
@@ -92,7 +93,9 @@ export class NearClient extends Client {
             receiver_id: this.poolContract.contractId,
             amount: amount,
             msg: '{"method":"lock"}',
-          }
+          },
+          attachedDeposit: new BN(1),
+          gas: new BN('300000000000000'),
         });
 
         console.debug('ft_transfer_call result', res);
@@ -140,8 +143,12 @@ export class NearClient extends Client {
   }
 
   public async getTokenBalance(tokenAddress: string): Promise<string> {
-    return (await this.account.viewFunction(tokenAddress, 'ft_balance_of', {
-      account_id: this.account.accountId,
+    return (await this.account.viewFunction({
+      contractId: tokenAddress,
+      methodName: 'ft_balance_of',
+      args: {
+        account_id: this.account.accountId,
+      }
     })).toString();
   }
 
