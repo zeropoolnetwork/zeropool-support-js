@@ -68,11 +68,11 @@ export class WavesClient extends Client {
     return `https://wavesexplorer.com/transactions/${hash}?network=${this.config.chainId}}`;
   }
 
-  public toBaseUnit(amount: string): string {
+  public async toBaseUnit(amount: string): Promise<string> {
     return (parseFloat(amount) * 10000000).toString();
   }
 
-  public fromBaseUnit(amount: string): string {
+  public async fromBaseUnit(amount: string): Promise<string> {
     return (parseInt(amount) / 10000000).toString();
   }
 

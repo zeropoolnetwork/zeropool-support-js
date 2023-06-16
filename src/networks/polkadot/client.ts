@@ -63,7 +63,7 @@ export class PolkadotClient extends Client {
    * Converts DOT to Planck.
    * @param amount in Ether
    */
-  public toBaseUnit(amount: string): string {
+  public async toBaseUnit(amount: string): Promise<string> {
     return amount; // FIXME: How to properly implement these methods? Use a configurable denominator?
   }
 
@@ -71,7 +71,7 @@ export class PolkadotClient extends Client {
    * Converts Planck to DOT.
    * @param amount in Wei
    */
-  public fromBaseUnit(amount: string): string {
+  public async fromBaseUnit(amount: string): Promise<string> {
     return amount; // FIXME:
   }
 

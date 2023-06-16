@@ -155,7 +155,7 @@ export class EthereumClient extends Client {
    * Converts ether to Wei.
    * @param amount in Ether
    */
-  public toBaseUnit(amount: string): string {
+  public async toBaseUnit(amount: string): Promise<string> {
     return this.web3.utils.toWei(amount, 'ether');
   }
 
@@ -163,7 +163,7 @@ export class EthereumClient extends Client {
    * Converts Wei to ether.
    * @param amount in Wei
    */
-  public fromBaseUnit(amount: string): string {
+  public async fromBaseUnit(amount: string): Promise<string> {
     return this.web3.utils.fromWei(amount, 'ether');
   }
 
@@ -172,7 +172,7 @@ export class EthereumClient extends Client {
     const gas = await this.web3.eth.estimateGas({
       from: address,
       to: address,
-      value: this.toBaseUnit('1'),
+      value: await this.toBaseUnit('1'),
     });
     const gasPrice = await this.web3.eth.getGasPrice();
     const fee = new BN(gas).mul(new BN(gasPrice));
@@ -180,7 +180,7 @@ export class EthereumClient extends Client {
     return {
       gas: gas.toString(),
       gasPrice,
-      fee: this.fromBaseUnit(fee.toString()),
+      fee: await this.fromBaseUnit(fee.toString()),
     };
   }
 

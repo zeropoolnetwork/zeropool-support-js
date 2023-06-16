@@ -9,6 +9,7 @@ import bs58 from 'bs58';
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
+import { fromBaseUnit, toBaseUnit } from '../../utils';
 
 export { ConnectConfig };
 
@@ -18,6 +19,7 @@ export class NearClient extends Client {
   private near: Near;
   private poolContract: Contract;
   private account: Account;
+  private decimalsCache: { [tokenAddress: string]: number } = {};
 
   public static async create(config: ConnectConfig, poolAddress: string, seedPhrase: string, accountId?: string): Promise<NearClient> {
     let self = new NearClient();
@@ -163,15 +165,27 @@ export class NearClient extends Client {
   /**
    * Convert human-readable NEAR to yoctoNEAR
    **/
-  public toBaseUnit(amount: string): string {
-    return parseNearAmount(amount)!;
+  public async toBaseUnit(amount: string, tokenId?: string): Promise<string> {
+    if (!tokenId || tokenId == 'near') {
+      return parseNearAmount(amount)!;
+    } else {
+      const decimals = await this.getDecimals(tokenId);
+
+      return toBaseUnit(amount, decimals);
+    }
   }
 
   /**
   * Convert yoctoNEAR to human-readable NEAR
   **/
-  public fromBaseUnit(amount: string): string {
-    return formatNearAmount(amount);
+  public async fromBaseUnit(amount: string, tokenId?: string): Promise<string> {
+    if (!tokenId || tokenId == 'near') {
+      return formatNearAmount(amount);
+    } else {
+      const decimals = await this.getDecimals(tokenId);
+
+      return fromBaseUnit(amount, decimals);
+    }
   }
 
   public async estimateTxFee(): Promise<TxFee> {
@@ -218,5 +232,25 @@ export class NearClient extends Client {
 
   public getTransactionUrl(hash: string): string {
     return 'https://explorer.testnet.near.org/transactions/' + hash; // FIXME: Make it configurable
+  }
+
+  private async getDecimals(tokenAddress: string): Promise<number> {
+    if (tokenAddress == 'near') {
+      return 24;
+    }
+
+    if (this.decimalsCache[tokenAddress]) {
+      return this.decimalsCache[tokenAddress];
+    }
+
+    const contract = new Contract(this.account, tokenAddress, {
+      viewMethods: ['ft_metadata'],
+      changeMethods: [],
+    });
+
+    // @ts-ignore
+    const metadata = await contract.ft_metadata();
+    this.decimalsCache[tokenAddress] = metadata.decimals;
+    return metadata.decimals;
   }
 }

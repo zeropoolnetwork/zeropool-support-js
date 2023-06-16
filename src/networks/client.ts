@@ -43,7 +43,7 @@ export abstract class Client {
   }
 
   public approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
-    throw new Error('unimplemented'); 
+    throw new Error('unimplemented');
   }
 
   public getTransactionUrl(hash: string): string {
@@ -66,13 +66,13 @@ export abstract class Client {
    * Convert human-readable representation of coin to smallest non-divisible (base) representation.
    * @param amount
    */
-  public abstract toBaseUnit(amount: string): string;
+  public abstract toBaseUnit(amount: string, tokenId?: string): Promise<string>;
 
   /**
   * Convert coin represented with smallest non-divisible units to a human-readable representation.
   * @param amount
   */
-  public abstract fromBaseUnit(amount: string): string;
+  public abstract fromBaseUnit(amount: string, tokenId?: string): Promise<string>;
 
   /**
    * Get estimated transaction fee.
