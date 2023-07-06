@@ -145,13 +145,17 @@ export class NearClient extends Client {
   }
 
   public async getTokenBalance(tokenAddress: string): Promise<string> {
-    return (await this.account.viewFunction({
-      contractId: tokenAddress,
-      methodName: 'ft_balance_of',
-      args: {
-        account_id: this.account.accountId,
-      }
-    })).toString();
+    if (!tokenAddress || tokenAddress == 'near') {
+      return this.getBalance();
+    } else {
+      return (await this.account.viewFunction({
+        contractId: tokenAddress,
+        methodName: 'ft_balance_of',
+        args: {
+          account_id: this.account.accountId,
+        }
+      })).toString();
+    }
   }
 
   /**
