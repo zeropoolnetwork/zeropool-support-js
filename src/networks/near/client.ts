@@ -6,6 +6,7 @@ import { JsonRpcProvider } from 'near-api-js/lib/providers';
 import { parseSeedPhrase } from 'near-seed-phrase';
 import { Buffer } from 'buffer';
 import bs58 from 'bs58';
+import { isHex } from 'web3-utils';
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
@@ -48,7 +49,12 @@ export class NearClient extends Client {
       let key = res.keys.find((key: any) => key.public_key === publicKey);
 
       if (!key) {
-        throw new Error('Seed phrase is not associated with the account ID');
+        const isAddressGenerated = isHex(address);
+        if (isAddressGenerated) {
+          console.warn('Account ID is generated from the seed phrase and is not initialized yet.');
+        } else {
+          throw new Error('Seed phrase is not associated with the account ID');
+        }
       }
     }
 
