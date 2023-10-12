@@ -5,6 +5,7 @@ import { Seed } from "@waves/waves-transactions/dist/seedUtils";
 import { Client } from '../client';
 import { TxFee } from '../transaction';
 import { Config } from './config';
+import { fromBaseUnit, toBaseUnit } from "@/utils";
 
 export class WavesClient extends Client {
   private config: Config;
@@ -69,11 +70,11 @@ export class WavesClient extends Client {
   }
 
   public async toBaseUnit(amount: string): Promise<string> {
-    return (parseFloat(amount) * 10000000).toString();
+    return toBaseUnit(amount, 8);
   }
 
   public async fromBaseUnit(amount: string): Promise<string> {
-    return (parseInt(amount) / 10000000).toString();
+    return fromBaseUnit(amount, 8);
   }
 
   // TODO: Estimate fee for private transactions
