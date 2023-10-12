@@ -5,7 +5,7 @@ import { Seed } from "@waves/waves-transactions/dist/seedUtils";
 import { Client } from '../client';
 import { TxFee } from '../transaction';
 import { Config } from './config';
-import { fromBaseUnit, toBaseUnit } from "@/utils";
+import { fromBaseUnit, toBaseUnit } from '../../utils';
 
 export class WavesClient extends Client {
   private config: Config;
