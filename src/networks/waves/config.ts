@@ -1,7 +1,7 @@
 export enum ChainId {
-  Mainnet = 'mainnet',
-  Testnet = 'testnet',
-  Stagenet = 'stagenet',
+  Mainnet = 'W',
+  Testnet = 'T',
+  Stagenet = 'S',
 }
 
 export namespace ChainId {
@@ -13,6 +13,8 @@ export namespace ChainId {
         return 84;
       case ChainId.Stagenet:
         return 83;
+      default:
+        throw new Error(`Invalid chainId: ${chainId}`);
     }
   }
 }
