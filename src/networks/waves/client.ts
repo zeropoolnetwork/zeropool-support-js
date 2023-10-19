@@ -4,7 +4,7 @@ import { Seed } from "@waves/waves-transactions/dist/seedUtils";
 
 import { Client } from '../client';
 import { TxFee } from '../transaction';
-import { Config } from './config';
+import { Config, ChainId } from './config';
 import { fromBaseUnit, toBaseUnit } from '../../utils';
 
 export class WavesClient extends Client {
@@ -30,6 +30,7 @@ export class WavesClient extends Client {
 
   public async transfer(to: string, amount: string): Promise<void> {
     const txParams = {
+      chainId: ChainId.chainIdNumber(this.config.chainId),
       recipient: to,
       amount,
     }
@@ -40,6 +41,7 @@ export class WavesClient extends Client {
 
   public async transferToken(tokenAddress: string, to: string, amount: string): Promise<void> {
     const txParams = {
+      chainId: ChainId.chainIdNumber(this.config.chainId),
       recipient: to,
       amount,
       assetId: tokenAddress,
@@ -51,6 +53,7 @@ export class WavesClient extends Client {
 
   public async approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
     await broadcast(invokeScript({
+      chainId: ChainId.chainIdNumber(this.config.chainId),
       dApp: this.poolAddress,
       call: {
         function: 'deposit'
