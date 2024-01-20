@@ -52,6 +52,16 @@ export class WavesClient extends Client {
   }
 
   public async approve(tokenAddress: string, spender: string, amount: string): Promise<number | null> {
+    const key = `D:${this.account.address}`;
+    const currentAllowanceRes = await nodeInteraction.accountDataByKey(key, this.poolAddress, this.config.nodeUrl);
+
+    if (currentAllowanceRes && currentAllowanceRes.type === 'integer' && BigInt(currentAllowanceRes.value) >= BigInt(amount)) {
+      console.log('There is already enough allowance. Skipping approve.');
+      return null;
+    } else {
+      console.log(`Approving ${amount} tokens for ${spender}. Current allowance is ${currentAllowanceRes ? currentAllowanceRes.value : '0'}`);
+    }
+
     await broadcast(invokeScript({
       chainId: ChainId.chainIdNumber(this.config.chainId),
       dApp: this.poolAddress,
