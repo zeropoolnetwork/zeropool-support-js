@@ -59,7 +59,7 @@ export class NearClient extends Client {
     }
 
     self.poolContract = new Contract(self.account, poolAddress, {
-      changeMethods: ['lock', 'release'],
+      changeMethods: ['lock', 'release', 'withdraw'],
       viewMethods: ['account_locks'],
     });
 
@@ -125,6 +125,12 @@ export class NearClient extends Client {
     }
   }
 
+  public async finalizeWithdrawal(tokenAddress: string, accountId: string): Promise<void> {
+    // @ts-ignore
+    return await this.poolContract.withdraw({
+      'account_id': accountId,
+    }, DEFAULT_FUNCTION_CALL_GAS);
+  }
 
   public async mint(tokenAddres: string, amount: string): Promise<void> {
     await this.account.functionCall({

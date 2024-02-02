@@ -46,6 +46,11 @@ export abstract class Client {
     throw new Error('unimplemented');
   }
 
+  public finalizeWithdrawal(tokenAddress: string, accountId: string): Promise<void> {
+    console.log('finalizeWithdrawal is not needed for this network');
+    return Promise.resolve();
+  }
+
   public getTransactionUrl(hash: string): string {
     return this.transactionUrl.replace('{{hash}}', hash);
   }
