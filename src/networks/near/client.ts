@@ -60,7 +60,7 @@ export class NearClient extends Client {
 
     self.poolContract = new Contract(self.account, poolAddress, {
       changeMethods: ['lock', 'release', 'withdraw'],
-      viewMethods: ['account_locks'],
+      viewMethods: ['account_locks', 'has_withdraw'],
     });
 
     return self;
@@ -126,6 +126,24 @@ export class NearClient extends Client {
   }
 
   public async finalizeWithdrawal(tokenAddress: string, accountId: string): Promise<void> {
+    let attempt = 0;
+    while (true) {
+      if (attempt > 10) {
+        throw new Error('Withdrawal not found');
+      }
+
+      // @ts-ignore
+      const withdrawFound: boolean = await this.poolContract.has_withdraw({ account_id: this.account.accountId });
+      if (withdrawFound) {
+        console.log('Withdrawal found');
+        break;
+      } else {
+        console.debug('Waiting for withdrawal to be finalized');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        attempt++;
+      }
+    }
+
     // @ts-ignore
     return await this.poolContract.withdraw({
       'account_id': accountId,
