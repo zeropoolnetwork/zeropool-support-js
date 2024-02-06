@@ -60,7 +60,7 @@ export class NearClient extends Client {
 
     self.poolContract = new Contract(self.account, poolAddress, {
       changeMethods: ['lock', 'release', 'withdraw'],
-      viewMethods: ['account_locks', 'has_withdraw'],
+      viewMethods: ['account_locks', 'withdrawal_exists'],
     });
 
     return self;
@@ -133,7 +133,7 @@ export class NearClient extends Client {
       }
 
       // @ts-ignore
-      const withdrawFound: boolean = await this.poolContract.has_withdraw({ account_id: this.account.accountId });
+      const withdrawFound: boolean = await this.poolContract.withdrawal_exists({ account_id: this.account.accountId });
       if (withdrawFound) {
         console.log('Withdrawal found');
         break;
